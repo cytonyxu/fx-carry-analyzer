@@ -6,6 +6,19 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import datetime
 
+# Current approximate Central Bank rates
+CENTRAL_BANK_RATES = {
+    'USD': 3.75,  
+    'JPY': 0.75,  
+    'MXN': 7.00,  
+    'AUD': 3.85,  
+    'ZAR': 7.25,  
+    'EUR': 2.00,  
+    'GBP': 3.75,  
+    'CHF': 0.00,  
+    'CAD': 3.75,  
+    'NZD': 4.25   
+}
 st.set_page_config(page_title="FX Carry Trade $1M Analyzer", layout="wide")
 st.title("FX Carry Trade & Risk Analyzer")
 
@@ -13,7 +26,23 @@ st.sidebar.header("Portfolio Settings")
 capital = st.sidebar.number_input("Initial Capital ($)", value=1000000, step=100000)
 tickers_input = st.sidebar.text_input("Yahoo Finance Tickers", "USDJPY=X, MXNJPY=X, AUDJPY=X, ZARJPY=X")
 tickers = [t.strip() for t in tickers_input.split(',')]
-annual_spread = st.sidebar.number_input("Net Interest Spread (%)", value=5.5, step=0.1) / 100
+
+def calculate_auto_spread(ticker_list):
+    spreads = []
+    for t in ticker_list:
+        base = t[0:3].upper()
+        quote = t[3:6].upper()
+        base_rate = CENTRAL_BANK_RATES.get(base, 0)
+        quote_rate = CENTRAL_BANK_RATES.get(quote, 0)
+        pair_spread = base_rate - quote_rate
+        spreads.append(pair_spread)
+    return sum(spreads) / len(spreads) if spreads else 0
+
+auto_spread_pct = calculate_auto_spread(tickers)
+annual_spread = auto_spread_pct / 100
+
+st.sidebar.metric("Automatic Basket Spread", f"{auto_spread_pct:.2f}%")
+
 years = st.sidebar.slider("Years of Data", 1, 10, 5)
 
 if st.sidebar.button("Run Analysis"):
